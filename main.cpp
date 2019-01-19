@@ -4,6 +4,7 @@
 #include <utility>
 #include <functional>
 #include <set>
+#include <assert.h>
 
 #include "function.h"
 
@@ -15,6 +16,10 @@ int64_t sqr(int32_t x) {
 
 bool greater(const int &a, const int &b) {
     return b < a;
+}
+
+bool func(int a) {
+    return (bool)a;
 }
 
 struct A {
@@ -45,26 +50,51 @@ int main() {
     function<void(void)> f;
     try {
         f();
-    } catch (...) {
+    } catch (std::bad_function_call& e) {
         std::cout << "empty function test\n";
     }
-    
+
     std::cout << f3(1) << " " << f3(0) << std::endl;
 
     // store a free function
-    std::function<void(int)> f_display = print_num;
+    function<void(int)> f_display = print_num;
     f_display(-9);
 
     // store a lambda
-    std::function<void()> f_display_42 = []() { print_num(42); };
+    function<void()> f_display_42 = []() { print_num(42); };
     f_display_42();
 
     // store the result of a call to std::bind
-    std::function<void()> f_display_31337 = std::bind(print_num, 31337);
+    function<void()> f_display_31337 = std::bind(print_num, 31337);
     f_display_31337();
 
     // store a call to a member function
-    std::function<void(const Foo&, int)> f_add_display = &Foo::print_add;
+    /*function<void(const Foo&, int)> f_add_display = &Foo::print_add;
     Foo foo(314159);
-    f_add_display(foo, 1);
+    f_add_display(foo, 1);*/
+
+    // copy constructor
+    function<void(int)> f_copy = f_display;
+    f_copy(228);
+
+    // move constructor
+    function<void(int)> f_move = std::move(f_display);
+    f_move(1477);
+
+    try {
+        f_display(15);
+    } catch (std::bad_function_call& e) {
+        std::cout << "move function test\n";
+    }
+
+
+    //swap test
+    function<bool(int)> f11 = A();
+    function<bool(int)> f12 = func;
+
+    function<bool(int)> f21 = A();
+    function<bool(int)> f22 = func;
+    f21.swap(f22);
+    assert(f11(0) == f22(0));
+    assert(f12(1) == f21(1));
 }
