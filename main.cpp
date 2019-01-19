@@ -1,40 +1,39 @@
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <utility>
+#include <functional>
+#include <set>
 
-template <typename T>
-class function;
 
-template <typename Ret, typename... Args>
-class function<Ret (Args...)> {
-public:
+#include "function.h"
 
-private:
-    class function_holder_base {
-    public:
-        function_holder_base() {};
-        virtual ~function_holder_base() {};
-        virtual Ret invoke(Args&&...) = 0;
-    };
+int64_t sqr(int32_t x) {
+    return x * x;
+}
 
-    template <typename Func>
-    class function_holder : public function_holder_base {
-    public:
-        function_holder(Func func)
-            : function_holder_base()
-            , inner_function(func)
-        {
-        }
+bool greater(const int &a, const int &b) {
+    return b < a;
+}
 
-        Ret invoke(Args&&... args) {
-            return inner_function(std::forward(args)...);
-        }
-
-    private:
-        Func inner_function;
-    };
-
-    function_holder_base* holder = nullptr;
+struct cmp {
+    bool operator()(int a, int b) {
+        return b < a;
+    }
 };
 
-
 int main() {
+    function<int64_t (int32_t)> f1(sqr);
+    function<bool (const int&, const int&)> f2(greater);
+    function<bool (int, int)> f3(cmp);
+
+
+    std::vector<int> v{2, 3, 1, 7, -3};
+    std::sort(v.begin(), v.end(), greater);
+
+    std::set<int, cmp> s;
+
+    std::cout << f2(7, 1) << std::endl;
+    std::cout << f1(10) << std::endl;
+    std::for_each(v.begin(), v.end(), [](int x) {std::cout << x << " ";});
 }
