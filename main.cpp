@@ -54,7 +54,8 @@ int main() {
         std::cout << "empty function test\n";
     }
 
-    std::cout << f3(1) << " " << f3(0) << std::endl;
+    assert(f3(1));
+    assert(!f3(0));
 
     // store a free function
     function<void(int)> f_display = print_num;
@@ -73,11 +74,11 @@ int main() {
     Foo foo(314159);
     f_add_display(foo, 1);*/
 
-    // copy constructor
+    // copy constructor test
     function<void(int)> f_copy = f_display;
     f_copy(228);
 
-    // move constructor
+    // move constructor test
     function<void(int)> f_move = std::move(f_display);
     f_move(1477);
 

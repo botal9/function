@@ -6,6 +6,7 @@
 #define FUNCTION_FUNCTION_H
 
 #include <utility>
+#include <variant>
 #include <memory>
 #include <cstring>
 
@@ -26,6 +27,7 @@ namespace {
         BIG
     };
 }
+
 
 template <typename T>
 class function;
@@ -66,8 +68,17 @@ private:
 
             return *this;
         };
+
+        /*void swap(function_traits& other) {
+            std::swap(invoker, other.invoker);
+            std::swap(deleter, other.deleter);
+            std::swap(copier, other.copier);
+            std::swap(mover, other.mover);
+        }*/
     };
 
+
+    // move
     template <typename T>
     static void move_small_object(storage_type& storage, storage_type& other) {
         T& f = reinterpret_cast<T&>(other);
@@ -84,6 +95,8 @@ private:
     {
     }
 
+
+    // copy
     template <typename T>
     static void copy_small_object(storage_type& storage, const storage_type& other) {
         auto f = reinterpret_cast<const T&>(other);
@@ -100,6 +113,8 @@ private:
     {
     }
 
+
+    //delete
     template <typename T>
     static void delete_small_object(storage_type& storage) {
         reinterpret_cast<T&>(storage).~T();
@@ -114,20 +129,25 @@ private:
     {
     }
 
+
+    //invoke
     template <typename T>
     static Ret invoke_small_object(storage_type& storage, Args&&... args) {
-        return (reinterpret_cast<T&>(storage))(std::forward<Args>(args)...);
+        return (reinterpret_cast<T&>(storage))(args...);
     }
 
     template <typename T>
     static Ret invoke_big_object(storage_type& storage, Args&&... args) {
-        return (*reinterpret_cast<T*&>(storage))(std::forward<Args>(args)...);
+        return (*reinterpret_cast<T*&>(storage))(args...);
     }
 
     static Ret invoke_empty_object(storage_type& storage, Args&&... args) {
         std::__throw_bad_function_call();
     }
 
+
+
+    // result traits
     static function_traits empty_object_traits() {
         return function_traits(invoke_empty_object, delete_empty_object, copy_empty_object, move_empty_object);
     }
@@ -141,6 +161,7 @@ private:
     static function_traits small_object_traits() {
         return function_traits(invoke_small_object<T>, delete_small_object<T>, copy_small_object<T>, move_small_object<T>);
     }
+
 
     template <typename T>
     static function_traits object_traits(OBJECT_TYPE object_type) {
