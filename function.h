@@ -212,11 +212,8 @@ public:
         if (is_small_type<Func>::value) {
             new (&storage) Func(std::move(f));
             type = SMALL;
-        } else if (std::is_nothrow_move_constructible<Func>::value) {
-            new (&storage) Func*(new Func(std::move(f)));
-            type = BIG;
         } else {
-            new (&storage) Func*(new Func(f));
+            new (&storage) Func*(new Func(std::move(f)));
             type = BIG;
         }
         traits = object_traits<Func>(type);
@@ -227,6 +224,8 @@ public:
         traits = other.traits;
         type = other.type;
         traits.copier(storage, other.storage);
+
+        return *this;
     }
 
     function& operator=(function&& other) noexcept {
@@ -235,6 +234,8 @@ public:
         type = other.type;
         other.type = EMPTY;
         traits.move(storage, other.storage);
+
+        return *this;
     }
 
     explicit operator bool() const noexcept {

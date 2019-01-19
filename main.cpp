@@ -77,6 +77,7 @@ int main() {
     // copy constructor test
     function<void(int)> f_copy = f_display;
     f_copy(228);
+    f_copy = f_display;
 
     // move constructor test
     function<void(int)> f_move = std::move(f_display);
