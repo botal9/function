@@ -9,6 +9,7 @@
 #include <variant>
 #include <memory>
 #include <cstring>
+#include <functional>
 
 constexpr const size_t MAX_SIZE = 16;
 constexpr const size_t ALIGN = 16;
@@ -37,7 +38,7 @@ class function<Ret (Args...)> {
 private:
     using storage_type = typename std::aligned_storage<MAX_SIZE, ALIGN>::type;
 
-    using invoker_type = Ret(*)(storage_type& storage, Args&&...);
+    using invoker_type = Ret(*)(const storage_type& storage, Args&&...);
     using deleter_type = void(*)(storage_type&);
     using copier_type = void(*)(storage_type& dst, const storage_type& src);
     using mover_type = void(*)(storage_type& dst, storage_type& src);
@@ -68,13 +69,6 @@ private:
 
             return *this;
         };
-
-        /*void swap(function_traits& other) {
-            std::swap(invoker, other.invoker);
-            std::swap(deleter, other.deleter);
-            std::swap(copier, other.copier);
-            std::swap(mover, other.mover);
-        }*/
     };
 
 
@@ -132,19 +126,18 @@ private:
 
     //invoke
     template <typename T>
-    static Ret invoke_small_object(storage_type& storage, Args&&... args) {
-        return (reinterpret_cast<T&>(storage))(args...);
+    static Ret invoke_small_object(const storage_type& storage, Args&&... args) {
+        return (reinterpret_cast<const T&>(storage))(args...);
     }
 
     template <typename T>
-    static Ret invoke_big_object(storage_type& storage, Args&&... args) {
-        return (*reinterpret_cast<T*&>(storage))(args...);
+    static Ret invoke_big_object(const storage_type& storage, Args&&... args) {
+        return (*reinterpret_cast<T* const&>(storage))(args...);
     }
 
-    static Ret invoke_empty_object(storage_type& storage, Args&&... args) {
-        std::__throw_bad_function_call();
+    static Ret invoke_empty_object(const storage_type& storage, Args&&... args) {
+        throw std::bad_function_call();
     }
-
 
 
     // result traits
@@ -177,6 +170,12 @@ private:
         }
     }
 
+    void clear() {
+        traits.deleter(storage);
+        traits = empty_object_traits();
+        type = EMPTY;
+    }
+
 public:
     function() noexcept
         : type(EMPTY)
@@ -189,7 +188,9 @@ public:
     {
     }
 
-    ~function() {}
+    ~function() {
+        traits.deleter(storage);
+    }
 
     function(const function& f)
         : traits(f.traits)
@@ -202,13 +203,16 @@ public:
         : traits(f.traits)
         , type(f.type)
     {
-        f.type = EMPTY;
         traits.mover(storage, f.storage);
+        f.clear();
     }
+
 
     template <typename Func>
     function(Func f)
+        : function()
     {
+        static_assert(std::is_nothrow_destructible<Func>::value);
         if (is_small_type<Func>::value) {
             new (&storage) Func(std::move(f));
             type = SMALL;
@@ -220,10 +224,8 @@ public:
     }
 
     function& operator=(const function& other) {
-        traits.deleter(storage);
-        traits = other.traits;
-        type = other.type;
-        traits.copier(storage, other.storage);
+        function copy(other);
+        swap(copy);
 
         return *this;
     }
@@ -232,8 +234,8 @@ public:
         traits.deleter(storage);
         traits = other.traits;
         type = other.type;
-        other.type = EMPTY;
         traits.move(storage, other.storage);
+        other.clear();
 
         return *this;
     }
@@ -262,10 +264,7 @@ public:
         traits.deleter(buff2);
     }
 
-    Ret operator()(Args&&... args) {
-        if (type == EMPTY) {
-            std::__throw_bad_function_call();
-        }
+    Ret operator()(Args&&... args) const {
         return traits.invoker(storage, std::forward<Args>(args)...);
     }
 

@@ -23,11 +23,29 @@ bool func(int a) {
 }
 
 struct A {
-    bool operator()(int a) {
+    bool operator()(int a) const {
         return (bool)a;
     }
 
     std::vector<int> a = vect;
+};
+
+
+struct B {
+    char* c;
+
+    B() {
+        c = new char[100];
+        std::fill(c, c + 100, 'w');
+    }
+
+    ~B() noexcept(false) {
+        throw std::runtime_error("~B");
+    }
+
+    char operator()() const {
+        return c[0];
+    }
 };
 
 struct Foo {
@@ -88,6 +106,8 @@ int main() {
     } catch (std::bad_function_call& e) {
         std::cout << "move function test\n";
     }
+
+    //function<char (void)> fB = B();
 
 
     //swap test
