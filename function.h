@@ -6,7 +6,6 @@
 #define FUNCTION_FUNCTION_H
 
 #include <utility>
-#include <variant>
 #include <memory>
 #include <cstring>
 
@@ -27,7 +26,6 @@ namespace {
         BIG
     };
 }
-
 
 template <typename T>
 class function;
@@ -68,13 +66,6 @@ private:
 
             return *this;
         };
-
-        /*void swap(function_traits& other) {
-            std::swap(invoker, other.invoker);
-            std::swap(deleter, other.deleter);
-            std::swap(copier, other.copier);
-            std::swap(mover, other.mover);
-        }*/
     };
 
     template <typename T>
@@ -125,12 +116,12 @@ private:
 
     template <typename T>
     static Ret invoke_small_object(storage_type& storage, Args&&... args) {
-        return (reinterpret_cast<T&>(storage))(args...);
+        return (reinterpret_cast<T&>(storage))(std::forward<Args>(args)...);
     }
 
     template <typename T>
     static Ret invoke_big_object(storage_type& storage, Args&&... args) {
-        return (*reinterpret_cast<T*&>(storage))(args...);
+        return (*reinterpret_cast<T*&>(storage))(std::forward<Args>(args)...);
     }
 
     static Ret invoke_empty_object(storage_type& storage, Args&&... args) {
