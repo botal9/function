@@ -17,7 +17,14 @@ class function;
 template <typename Ret, typename... Args>
 class function<Ret (Args...)> {
 public:
-    function() noexcept : holder(nullptr) {}
+    function() noexcept : holder(nullptr)
+    {
+    };
+
+    function(std::nullptr_t) noexcept
+        : function()
+    {
+    };
 
     ~function() {}
 
@@ -56,6 +63,9 @@ public:
     }
 
     Ret operator()(Args&&... args) {
+        if (!holder) {
+            throw std::runtime_error("undefined function");
+        }
         return holder->invoke(std::forward<Args>(args)...);
     }
 

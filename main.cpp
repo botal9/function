@@ -42,6 +42,13 @@ int main() {
     function<bool (const int&, const int&)> f2(greater);
     function<bool (int)> f3 = A();
 
+    function<void(void)> f;
+    try {
+        f();
+    } catch (...) {
+        std::cout << "empty function test\n";
+    }
+    
     std::cout << f3(1) << " " << f3(0) << std::endl;
 
     // store a free function
