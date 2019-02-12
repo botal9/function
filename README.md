@@ -1,1 +1,1 @@
-# std::function implementation using SO optimization
+# std::function implementation with SO optimization
